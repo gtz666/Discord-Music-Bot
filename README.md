@@ -1,5 +1,11 @@
 # 🎶 Discord Music Bot
 
+![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
+
+![Discord](https://img.shields.io/badge/discord.py-2.x-purple)
+
+[![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.txt)
+
 A full-featured, slash-command-based music bot for Discord, built with Python. Supports queue management, YouTube streaming, loop modes, auto-playlist generation, and channel restriction.
 
 ---
