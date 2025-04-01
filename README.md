@@ -1,5 +1,7 @@
 # 🎶 Discord Music Bot
 
+[![GitHub release](https://img.shields.io/github/v/release/gtz666/Discord-Music-Bot?include_prereleases)](https://github.com/gtz666/Discord-Music-Bot/releases)
+
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)
 
 ![Discord](https://img.shields.io/badge/discord.py-2.x-purple)
