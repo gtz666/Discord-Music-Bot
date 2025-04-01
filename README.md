@@ -68,6 +68,8 @@ discord-music-bot/
 ├── allowed_channels.json  # Channel restrictions (auto-generated)
 ├── README.md              # Project overview
 ├── CHANGELOG.md           # Update history
+├── Procfile          
+├── runtime.txt
 ```
 
 ## License
