@@ -1,0 +1,16 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+.venv/
+env/
+
+# IDE settings
+.vscode/
+.idea/
+
+# Secrets and generated data
+.env
+allowed_channels.json
+reminders.json
