@@ -44,6 +44,7 @@ def get_ffmpeg_path():
     return shutil.which("ffmpeg") or "ffmpeg"
 
 def play_next(ctx):
+    import tempfile
     guild_id = ctx.guild.id
     vc = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     queue = playlist_queues.get(guild_id, [])
@@ -55,23 +56,30 @@ def play_next(ctx):
     item = queue.pop(0)
     url, title = item['url'], item['title']
     volume = volume_levels.get(guild_id, 0.5)
+
+    # Download audio to file
+    ydl_opts = {
+        'format': 'bestaudio[ext=m4a]/bestaudio/best',
+        'quiet': True,
+        'outtmpl': tempfile.gettempdir() + '/%(id)s.%(ext)s',
+        'cookiefile': 'cookies.txt'
+    }
+
+    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(url, download=True)
+        filename = ydl.prepare_filename(info)
+
+    print(f"[DEBUG] Playing local file: {filename}")
     ffmpeg_options = get_ffmpeg_options()
-    
     source = discord.PCMVolumeTransformer(
-        discord.FFmpegPCMAudio(
-            url,
-            executable=get_ffmpeg_path(),
-            stderr=subprocess.PIPE,
-            **get_ffmpeg_options()
-        ),
+        discord.FFmpegPCMAudio(filename, executable=get_ffmpeg_path(), **ffmpeg_options),
         volume=volume
     )
+
     current_sources[guild_id] = source
     now_playing[guild_id] = title
 
     def after_playing(err):
-        if err:
-            print(f"[ERROR] after_playing: {err}")
         try:
             if loop_mode.get(guild_id) == LOOP_SINGLE:
                 playlist_queues.setdefault(guild_id, []).insert(0, item)
@@ -88,14 +96,13 @@ def play_next(ctx):
             asyncio.run_coroutine_threadsafe(idle_disconnect(), bot.loop)
         except Exception as e:
             now_playing[guild_id] = None
+            print(f"[ERROR] after_playing(): {e}")
 
     try:
-        print(f"[DEBUG] Playing: {title} from {url}")
         vc.play(source, after=after_playing)
     except Exception as e:
         print(f"[ERROR] vc.play(): {e}")
         now_playing[guild_id] = None
-        return False
 
     if not play_history.get(guild_id) or play_history[guild_id][-1]['url'] != url:
         play_history.setdefault(guild_id, []).append({'url': url, 'title': title})
@@ -132,8 +139,7 @@ async def play(ctx, *, search: str):
             info = ydl.extract_info(search, download=False)
             if 'entries' in info and info['entries']:
                 info = info['entries'][0]
-            url, title = info['url'], info['title']
-            print(f"[DEBUG] Extracted URL: {url}") ##Debug
+            url, title = info['webpage_url'], info['title']
 
         queue = playlist_queues.setdefault(ctx.guild.id, [])
         queue.insert(0, {'url': url, 'title': title})
