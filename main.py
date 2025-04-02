@@ -1,21 +1,20 @@
 # main.py
-import subprocess
 import discord
 from discord.ext import commands
 import asyncio
 import yt_dlp as youtube_dl
 import os
 import json
+import shutil
 from dotenv import load_dotenv
 from pathlib import Path
 
 load_dotenv()
 
-# Write cookies from environment variable to file
+# 写入 cookie 文件（用于 yt-dlp）
 cookie_content = os.getenv("YTDLP_COOKIE")
 if cookie_content:
     Path("cookies.txt").write_text(cookie_content.replace("\\n", "\n").strip(), encoding="utf-8")
-
 
 intents = discord.Intents.default()
 intents.message_content = True
@@ -34,18 +33,30 @@ LOOP_NONE = "none"
 LOOP_QUEUE = "queue"
 LOOP_SINGLE = "single"
 
-def get_ffmpeg_options(local=False):
-    return {} if local else {
-        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
+def get_ffmpeg_options():
+    return {
+        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+        'options': '-vn'
     }
 
 def get_ffmpeg_path():
-    import shutil
     return shutil.which("ffmpeg") or "ffmpeg"
 
-print(f"[DEBUG] FFmpeg path used: {get_ffmpeg_path()}")
+def get_ydl_opts():
+    return {
+        'format': 'bestaudio/best',
+        'quiet': True,
+        'noplaylist': True,
+        'cookiefile': 'cookies.txt',
+        'outtmpl': '/tmp/%(id)s.%(ext)s',
+        'default_search': 'ytsearch',
+        'postprocessors': [{
+            'key': 'FFmpegExtractAudio',
+            'preferredcodec': 'm4a',
+        }]
+    }
 
-def play_next(ctx):
+async def play_next(ctx):
     guild_id = ctx.guild.id
     vc = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     queue = playlist_queues.get(guild_id, [])
@@ -55,59 +66,36 @@ def play_next(ctx):
         return False
 
     item = queue.pop(0)
-    url, title = item['url'], item['title']
+    path, title = item['path'], item['title']
     volume = volume_levels.get(guild_id, 0.5)
-    ffmpeg_options = get_ffmpeg_options()
-    filepath = item.get("filepath") or url  # in case you're using local file later
 
     try:
         source = discord.PCMVolumeTransformer(
-            discord.FFmpegPCMAudio(filepath, executable=get_ffmpeg_path(), **ffmpeg_options),
+            discord.FFmpegPCMAudio(path, executable=get_ffmpeg_path(), **get_ffmpeg_options()),
             volume=volume
         )
-    except Exception as e:
-        print(f"[ERROR] FFmpegPCMAudio failed: {e}")
-        async def send_error():
-            await ctx.send(f"❌ Audio source error: {e}")
-        bot.loop.create_task(send_error())
-        return False
+        current_sources[guild_id] = source
+        now_playing[guild_id] = title
 
-    current_sources[guild_id] = source
-    now_playing[guild_id] = title
+        def after_playing(err):
+            try:
+                if loop_mode.get(guild_id) == LOOP_SINGLE:
+                    queue.insert(0, item)
+                elif loop_mode.get(guild_id) == LOOP_QUEUE:
+                    queue.append(item)
 
-    def after_playing(err):
-        try:
-            if loop_mode.get(guild_id) == LOOP_SINGLE:
-                playlist_queues.setdefault(guild_id, []).insert(0, item)
-            elif loop_mode.get(guild_id) == LOOP_QUEUE:
-                playlist_queues.setdefault(guild_id, []).append(item)
+                asyncio.run_coroutine_threadsafe(play_next(ctx), bot.loop)
+            except Exception as e:
+                now_playing[guild_id] = None
 
-            async def idle_disconnect():
-                await asyncio.sleep(180)
-                if not vc.is_playing() and not vc.is_paused():
-                    await vc.disconnect()
-                    voice_clients.pop(guild_id, None)
-
-            play_next(ctx)
-            asyncio.run_coroutine_threadsafe(idle_disconnect(), bot.loop)
-        except Exception as e:
-            now_playing[guild_id] = None
-            print(f"[ERROR] after_playing(): {e}")
-
-    try:
         vc.play(source, after=after_playing)
-        print("[DEBUG] vc.play() called successfully.")
-    except Exception as e:
-        print(f"[ERROR] vc.play(): {e}")
 
-    # update history
-    if not play_history.get(guild_id) or play_history[guild_id][-1]['url'] != url:
-        play_history.setdefault(guild_id, []).append({'url': url, 'title': title})
+        play_history.setdefault(guild_id, []).append({'title': title})
         if len(play_history[guild_id]) > 5:
             play_history[guild_id] = play_history[guild_id][-5:]
-
-    return True
-
+    except Exception as e:
+        print(f"[ERROR] vc.play(): {e}")
+        await ctx.send("❌ Failed to play the song.")
 
 @bot.command(name="play")
 async def play(ctx, *, search: str):
@@ -124,27 +112,19 @@ async def play(ctx, *, search: str):
         elif vc.channel != target_channel:
             await vc.move_to(target_channel)
 
-        ydl_opts = {
-            'format': 'bestaudio[ext=m4a]/bestaudio/best',
-            'quiet': True,
-            'noplaylist': True,
-            'default_search': 'ytsearch',
-            'source_address': '0.0.0.0',
-            'cookiefile': 'cookies.txt'
-        }
-
-        with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(search, download=False)
+        with youtube_dl.YoutubeDL(get_ydl_opts()) as ydl:
+            info = ydl.extract_info(search, download=True)
             if 'entries' in info and info['entries']:
                 info = info['entries'][0]
-            url, title = info['webpage_url'], info['title']
+            file_path = f"/tmp/{info['id']}.m4a"
+            title = info.get('title', 'Unknown Title')
 
         queue = playlist_queues.setdefault(ctx.guild.id, [])
-        queue.insert(0, {'url': url, 'title': title})
+        queue.insert(0, {'path': file_path, 'title': title})
         await ctx.send(f"🎶 Now playing: {title}")
 
         if not vc.is_playing() and not vc.is_paused():
-            play_next(ctx)
+            await play_next(ctx)
         else:
             vc.stop()
 
@@ -232,7 +212,7 @@ async def gen(ctx, *, keyword: str):
         }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         results = ydl.extract_info(f"ytsearch5:{keyword}", download=False)['entries']
-    playlist = [{'url': r['url'], 'title': r['title']} for r in results]
+    playlist = [{'path': r['path'], 'title': r['title']} for r in results]
     playlist_queues.setdefault(ctx.guild.id, []).extend(playlist)
     if not discord.utils.get(bot.voice_clients, guild=ctx.guild):
         if ctx.author.voice:
@@ -252,8 +232,8 @@ async def add(ctx, *, search: str):
         }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(f"ytsearch:{search}", download=False)['entries'][0]
-        url, title = info['url'], info['title']
-    playlist_queues.setdefault(ctx.guild.id, []).append({'url': url, 'title': title})
+        path, title = info['path'], info['title']
+    playlist_queues.setdefault(ctx.guild.id, []).append({'path': path, 'title': title})
     await ctx.send(f"➕ Added to queue: {title}")
 
 @bot.command(name="show")
