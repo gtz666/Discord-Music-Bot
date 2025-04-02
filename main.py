@@ -6,8 +6,14 @@ import yt_dlp as youtube_dl
 import os
 import json
 from dotenv import load_dotenv
+from pathlib import Path
 
 load_dotenv()
+
+# Write cookies from environment variable to file
+cookie_content = os.getenv("YTDLP_COOKIE")
+if cookie_content:
+    Path("cookies.txt").write_text(cookie_content.strip(), encoding="utf-8")
 
 intents = discord.Intents.default()
 intents.message_content = True
