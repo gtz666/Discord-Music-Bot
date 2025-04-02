@@ -1,6 +1,5 @@
 # main.py
-import discord
-from discord.ext import commands
+
 import asyncio
 import yt_dlp as youtube_dl
 import os
@@ -13,14 +12,18 @@ import subprocess
 
 os.environ['OPUS_LIBRARY'] = '/nix/store/cb7xz81832zj9pciyi585f3rp60wjcyx-libopus-1.5.2/lib/libopus.so.0'
 
+from discord import opus
+if not opus.is_loaded():
+    opus.load_opus(os.environ['OPUS_LIBRARY'])
+
+import discord
+from discord.ext import commands
+
 print("[DEBUG] Searching for opus:")
 print(subprocess.getoutput("find / -name 'libopus.so*' 2>/dev/null"))
 
-try:
-    discord.opus.load_opus("/usr/lib/libopus.so.0")
-except Exception as e:
-    print(f"[ERROR] Failed to load opus library: {e}")
-    
+print(f"[DEBUG] Opus loaded: {opus.is_loaded()}")
+
 load_dotenv()
 
 # 写入 cookie 文件（用于 yt-dlp）
