@@ -1,4 +1,5 @@
 # main.py
+import subprocess
 import discord
 from discord.ext import commands
 import asyncio
@@ -57,13 +58,20 @@ def play_next(ctx):
     ffmpeg_options = get_ffmpeg_options()
     
     source = discord.PCMVolumeTransformer(
-        discord.FFmpegPCMAudio(url, executable=get_ffmpeg_path(), **ffmpeg_options),
+        discord.FFmpegPCMAudio(
+            url,
+            executable=get_ffmpeg_path(),
+            stderr=subprocess.PIPE,
+            **get_ffmpeg_options()
+        ),
         volume=volume
     )
     current_sources[guild_id] = source
     now_playing[guild_id] = title
 
     def after_playing(err):
+        if err:
+            print(f"[ERROR] after_playing: {err}")
         try:
             if loop_mode.get(guild_id) == LOOP_SINGLE:
                 playlist_queues.setdefault(guild_id, []).insert(0, item)
@@ -112,7 +120,7 @@ async def play(ctx, *, search: str):
             await vc.move_to(target_channel)
 
         ydl_opts = {
-            'format': 'bestaudio[ext=webm]/bestaudio',
+            'format': 'bestaudio[ext=m4a]/bestaudio/best',
             'quiet': True,
             'noplaylist': True,
             'default_search': 'ytsearch',
@@ -211,7 +219,7 @@ async def loop(ctx, mode: str):
 async def gen(ctx, *, keyword: str):
     await ctx.send(f"🔎 Generating songs for: {keyword}")
     ydl_opts = {
-            'format': 'bestaudio[ext=webm]/bestaudio',
+            'format': 'bestaudio[ext=m4a]/bestaudio/best',
             'quiet': True,
             'noplaylist': True,
             'default_search': 'ytsearch',
@@ -231,7 +239,7 @@ async def gen(ctx, *, keyword: str):
 @bot.command(name="add")
 async def add(ctx, *, search: str):
     ydl_opts = {
-            'format': 'bestaudio[ext=webm]/bestaudio',
+            'format': 'bestaudio[ext=m4a]/bestaudio/best',
             'quiet': True,
             'noplaylist': True,
             'default_search': 'ytsearch',
