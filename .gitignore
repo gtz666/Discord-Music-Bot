@@ -14,3 +14,4 @@ env/
 .env
 allowed_channels.json
 reminders.json
+cookies.txt

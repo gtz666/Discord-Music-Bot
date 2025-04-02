@@ -95,7 +95,8 @@ async def play(ctx, *, search: str):
             'quiet': True,
             'noplaylist': True,
             'default_search': 'ytsearch',
-            'source_address': '0.0.0.0'
+            'source_address': '0.0.0.0',
+            'cookiefile': 'cookies.txt'
         }
 
         with youtube_dl.YoutubeDL(ydl_opts) as ydl:
@@ -186,7 +187,14 @@ async def loop(ctx, mode: str):
 @bot.command(name="gen")
 async def gen(ctx, *, keyword: str):
     await ctx.send(f"🔎 Generating songs for: {keyword}")
-    ydl_opts = {'format': 'bestaudio', 'noplaylist': True, 'quiet': True}
+    ydl_opts = {
+            'format': 'bestaudio/best',
+            'quiet': True,
+            'noplaylist': True,
+            'default_search': 'ytsearch',
+            'source_address': '0.0.0.0',
+            'cookiefile': 'cookies.txt'
+        }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         results = ydl.extract_info(f"ytsearch5:{keyword}", download=False)['entries']
     playlist = [{'url': r['url'], 'title': r['title']} for r in results]
@@ -199,7 +207,14 @@ async def gen(ctx, *, keyword: str):
 
 @bot.command(name="add")
 async def add(ctx, *, search: str):
-    ydl_opts = {'format': 'bestaudio', 'noplaylist': True, 'quiet': True}
+    ydl_opts = {
+            'format': 'bestaudio/best',
+            'quiet': True,
+            'noplaylist': True,
+            'default_search': 'ytsearch',
+            'source_address': '0.0.0.0',
+            'cookiefile': 'cookies.txt'
+        }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(f"ytsearch:{search}", download=False)['entries'][0]
         url, title = info['url'], info['title']
