@@ -43,8 +43,9 @@ def get_ffmpeg_path():
     import shutil
     return shutil.which("ffmpeg") or "ffmpeg"
 
+print(f"[DEBUG] FFmpeg path used: {get_ffmpeg_path()}")
+
 def play_next(ctx):
-    import tempfile
     guild_id = ctx.guild.id
     vc = discord.utils.get(bot.voice_clients, guild=ctx.guild)
     queue = playlist_queues.get(guild_id, [])
@@ -56,25 +57,20 @@ def play_next(ctx):
     item = queue.pop(0)
     url, title = item['url'], item['title']
     volume = volume_levels.get(guild_id, 0.5)
+    ffmpeg_options = get_ffmpeg_options()
+    filepath = item.get("filepath") or url  # in case you're using local file later
 
-    # Download audio to file
-    ydl_opts = {
-        'format': 'bestaudio[ext=m4a]/bestaudio/best',
-        'quiet': True,
-        'outtmpl': tempfile.gettempdir() + '/%(id)s.%(ext)s',
-        'cookiefile': 'cookies.txt'
-    }
-
-    with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(url, download=True)
-        filename = ydl.prepare_filename(info)
-
-    print(f"[DEBUG] Playing local file: {filename}")
-    ffmpeg_options = get_ffmpeg_options(local=True)
-    source = discord.PCMVolumeTransformer(
-        discord.FFmpegPCMAudio(filename, executable=get_ffmpeg_path(), **ffmpeg_options),
-        volume=volume
-    )
+    try:
+        source = discord.PCMVolumeTransformer(
+            discord.FFmpegPCMAudio(filepath, executable=get_ffmpeg_path(), **ffmpeg_options),
+            volume=volume
+        )
+    except Exception as e:
+        print(f"[ERROR] FFmpegPCMAudio failed: {e}")
+        async def send_error():
+            await ctx.send(f"❌ Audio source error: {e}")
+        bot.loop.create_task(send_error())
+        return False
 
     current_sources[guild_id] = source
     now_playing[guild_id] = title
@@ -100,16 +96,18 @@ def play_next(ctx):
 
     try:
         vc.play(source, after=after_playing)
+        print("[DEBUG] vc.play() called successfully.")
     except Exception as e:
         print(f"[ERROR] vc.play(): {e}")
-        now_playing[guild_id] = None
 
+    # update history
     if not play_history.get(guild_id) or play_history[guild_id][-1]['url'] != url:
         play_history.setdefault(guild_id, []).append({'url': url, 'title': title})
         if len(play_history[guild_id]) > 5:
             play_history[guild_id] = play_history[guild_id][-5:]
 
     return True
+
 
 @bot.command(name="play")
 async def play(ctx, *, search: str):
