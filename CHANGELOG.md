@@ -4,7 +4,27 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [v0.2.0] - 2024-04-02
+## v0.3.0 – April 1, 2025
+
+### Major Improvements
+- Use ! commands instead of slash commands to avoid conflict with Discord Default commands
+- Refactored `!play` to **immediately insert and play** a song (without clearing the queue)
+- Ensured bot **moves voice channel automatically** if user is in a different one
+- `!play` now triggers `vc.stop()` properly to skip current track
+
+### Bug Fixes
+- Fixed issue where `!play` would add song but not play
+- Fixed double entries in playback history (`!show`)
+- Prevented crash when `!leave` is called mid-play
+- Improved queue logic: current song is now **not** part of queue (`now_playing` is separate)
+- Loop logic updated (`loop single` reinserts current track correctly)
+
+### New Commands
+- `!add` – Add a song to the end of the queue without playing
+- `!leave` – Disconnect bot from voice channel
+- `!show` – Displays current track, recent history (5 max), and upcoming queue
+
+## [v0.2.0] - 2024-04-01
 
 ### Added
 - ✅ All commands converted to slash (HybridCommand) format
@@ -31,7 +51,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [v0.1.0] - 2024-04-01
+## [v0.1.0] - 2024-03-31
 
 ### Added
 - Basic command-based music bot with:

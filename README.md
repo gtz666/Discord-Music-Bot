@@ -14,17 +14,17 @@ A full-featured, slash-command-based music bot for Discord, built with Python. S
 
 ## 🚀 Features
 
-- 🎵 `/play` — Search and play songs from YouTube
-- 🔗 `/playlink` — Play music from a direct link
-- ➕ `/add` — Add songs to the playlist
-- 📜 `/show` — View current, recent, and upcoming songs
-- ⏸️ `/stop`, `/resume`, `/next`, `/last` — Playback controls
-- 🔁 `/loop` — Set looping mode: `none`, `queue`, or `single`
-- 🧹 `/clear` — Clear the playlist
-- 🔉 `/volume` — Adjust volume in real time
-- 🧠 `/gen` — Auto-generate 5 relevant songs by genre
-- 📺 `/setchannel` — Bind bot to a specific command channel
-- 🛡️ Slash commands only work in selected text channel
+- `!play <keywords/link>` — Search YouTube and play immediately (force join + force play)
+- `!add <keywords>` — Add song to queue without playback
+- `!stop / !resume` — Pause and resume playback
+- `!volume <0–100>` — Adjust volume
+- `!next / !last` — Skip to next or replay previous
+- `!loop <none|queue|single>` — Choose playback loop mode
+- `!gen <keyword>` — Auto-add 5 related YouTube tracks
+- `!show` — Show current playing song, recent history, and queue
+- `!clear` — Clear the queue
+- `!leave` — Disconnect bot from voice channel
+- `!commands` — Show help list
 
 ---
 
@@ -33,7 +33,7 @@ A full-featured, slash-command-based music bot for Discord, built with Python. S
 ### 1. Clone the project
 
 ```bash
-git clone https://github.com/gtz666/discord-music-bot.git
+git clone https://github.com/gtz666/Discord-Music-Bot.git
 cd discord-music-bot
 ```
 
