@@ -11,6 +11,8 @@ from pathlib import Path
 import traceback
 import subprocess
 
+os.environ['OPUS_LIBRARY'] = '/nix/store/cb7xz81832zj9pciyi585f3rp60wjcyx-libopus-1.5.2/lib/libopus.so.0'
+
 print("[DEBUG] Searching for opus:")
 print(subprocess.getoutput("find / -name 'libopus.so*' 2>/dev/null"))
 
