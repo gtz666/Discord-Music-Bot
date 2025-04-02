@@ -13,7 +13,8 @@ load_dotenv()
 # Write cookies from environment variable to file
 cookie_content = os.getenv("YTDLP_COOKIE")
 if cookie_content:
-    Path("cookies.txt").write_text(cookie_content.strip(), encoding="utf-8")
+    Path("cookies.txt").write_text(cookie_content.replace("\\n", "\n").strip(), encoding="utf-8")
+
 
 intents = discord.Intents.default()
 intents.message_content = True
