@@ -114,15 +114,18 @@ async def play(ctx, *, search: str):
 
         queue = playlist_queues.setdefault(ctx.guild.id, [])
         queue.insert(0, {'url': url, 'title': title})
+
         await ctx.send(f"🎶 Now playing: {title}")
 
         if not vc.is_playing() and not vc.is_paused():
             play_next(ctx)
         else:
+            await asyncio.sleep(1) 
             vc.stop()
 
     except Exception as e:
         await ctx.send("❌ Failed to retrieve or play the audio.")
+        print(f"[ERROR] play(): {e}")
 
 
 @bot.command(name="stop")
