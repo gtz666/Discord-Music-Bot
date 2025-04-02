@@ -82,6 +82,7 @@ def play_next(ctx):
             now_playing[guild_id] = None
 
     try:
+        print(f"[DEBUG] Playing: {title} from {url}")
         vc.play(source, after=after_playing)
     except Exception as e:
         print(f"[ERROR] vc.play(): {e}")
@@ -111,7 +112,7 @@ async def play(ctx, *, search: str):
             await vc.move_to(target_channel)
 
         ydl_opts = {
-            'format': 'bestaudio/best',
+            'format': 'bestaudio[ext=webm]/bestaudio',
             'quiet': True,
             'noplaylist': True,
             'default_search': 'ytsearch',
@@ -124,6 +125,7 @@ async def play(ctx, *, search: str):
             if 'entries' in info and info['entries']:
                 info = info['entries'][0]
             url, title = info['url'], info['title']
+            print(f"[DEBUG] Extracted URL: {url}") ##Debug
 
         queue = playlist_queues.setdefault(ctx.guild.id, [])
         queue.insert(0, {'url': url, 'title': title})
@@ -209,7 +211,7 @@ async def loop(ctx, mode: str):
 async def gen(ctx, *, keyword: str):
     await ctx.send(f"🔎 Generating songs for: {keyword}")
     ydl_opts = {
-            'format': 'bestaudio/best',
+            'format': 'bestaudio[ext=webm]/bestaudio',
             'quiet': True,
             'noplaylist': True,
             'default_search': 'ytsearch',
@@ -229,7 +231,7 @@ async def gen(ctx, *, keyword: str):
 @bot.command(name="add")
 async def add(ctx, *, search: str):
     ydl_opts = {
-            'format': 'bestaudio/best',
+            'format': 'bestaudio[ext=webm]/bestaudio',
             'quiet': True,
             'noplaylist': True,
             'default_search': 'ytsearch',
