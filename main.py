@@ -34,8 +34,8 @@ LOOP_NONE = "none"
 LOOP_QUEUE = "queue"
 LOOP_SINGLE = "single"
 
-def get_ffmpeg_options():
-    return {
+def get_ffmpeg_options(local=False):
+    return {} if local else {
         'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
     }
 
@@ -70,7 +70,7 @@ def play_next(ctx):
         filename = ydl.prepare_filename(info)
 
     print(f"[DEBUG] Playing local file: {filename}")
-    ffmpeg_options = get_ffmpeg_options()
+    ffmpeg_options = get_ffmpeg_options(local=True)
     source = discord.PCMVolumeTransformer(
         discord.FFmpegPCMAudio(filename, executable=get_ffmpeg_path(), **ffmpeg_options),
         volume=volume
