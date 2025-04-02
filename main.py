@@ -8,6 +8,7 @@ import json
 import shutil
 from dotenv import load_dotenv
 from pathlib import Path
+import traceback
 
 load_dotenv()
 
@@ -46,16 +47,13 @@ def get_ffmpeg_path():
 
 def get_ydl_opts():
     return {
-        'format': 'bestaudio/best',
+        'format': 'bestaudio[ext=m4a]/bestaudio/best',
         'quiet': True,
         'noplaylist': True,
         'cookiefile': 'cookies.txt',
         'outtmpl': '/tmp/%(id)s.%(ext)s',
         'default_search': 'ytsearch',
-        'postprocessors': [{
-            'key': 'FFmpegExtractAudio',
-            'preferredcodec': 'm4a',
-        }]
+        
     }
 
 print(f"[DEBUG] FFmpeg path used: {get_ffmpeg_path()}")
@@ -97,10 +95,12 @@ async def play_next(ctx):
                 now_playing[guild_id] = None
 
         try:
+            print(f"[DEBUG] Trying to play local file: {path}, exists: {os.path.exists(path)}")
             vc.play(source, after=after_playing)
         except Exception as e:
             print(f"[ERROR] vc.play(): {e}")
-            await ctx.send(f"❌ Failed to play: {e}")
+            traceback.print_exc()
+            await ctx.send("❌ Failed to play the song.")
 
         play_history.setdefault(guild_id, []).append({'title': title})
         if len(play_history[guild_id]) > 5:
@@ -125,9 +125,12 @@ async def play(ctx, *, search: str):
             await vc.move_to(target_channel)
 
         with youtube_dl.YoutubeDL(get_ydl_opts()) as ydl:
-            info = ydl.extract_info(search, download=True)
+            info = ydl.extract_info(f"ytsearch1:{search}", download=True)
             if 'entries' in info and info['entries']:
                 info = info['entries'][0]
+            else:
+                await ctx.send("❌ No results found.")
+                return
             file_path = f"/tmp/{info['id']}.m4a"
             title = info.get('title', 'Unknown Title')
 
@@ -243,7 +246,8 @@ async def add(ctx, *, search: str):
             'cookiefile': 'cookies.txt'
         }
     with youtube_dl.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(f"ytsearch:{search}", download=False)['entries'][0]
+        
+        info = ydl.extract_info(f"ytsearch1:{search}", download=False)['entries'][0]
         path, title = info['path'], info['title']
     playlist_queues.setdefault(ctx.guild.id, []).append({'path': path, 'title': title})
     await ctx.send(f"➕ Added to queue: {title}")
