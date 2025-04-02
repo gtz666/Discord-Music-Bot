@@ -35,7 +35,7 @@ LOOP_SINGLE = "single"
 
 def get_ffmpeg_options():
     return {
-        'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+        'before_options': '',
         'options': '-vn'
     }
 
