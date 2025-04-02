@@ -10,6 +10,11 @@ from dotenv import load_dotenv
 from pathlib import Path
 import traceback
 
+try:
+    discord.opus.load_opus("/usr/lib/libopus.so.0")
+except Exception as e:
+    print(f"[ERROR] Failed to load opus library: {e}")
+    
 load_dotenv()
 
 # 写入 cookie 文件（用于 yt-dlp）
