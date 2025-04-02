@@ -81,7 +81,12 @@ def play_next(ctx):
         except Exception as e:
             now_playing[guild_id] = None
 
-    vc.play(source, after=after_playing)
+    try:
+        vc.play(source, after=after_playing)
+    except Exception as e:
+        print(f"[ERROR] vc.play(): {e}")
+        now_playing[guild_id] = None
+        return False
 
     if not play_history.get(guild_id) or play_history[guild_id][-1]['url'] != url:
         play_history.setdefault(guild_id, []).append({'url': url, 'title': title})
