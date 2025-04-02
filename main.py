@@ -9,6 +9,10 @@ import shutil
 from dotenv import load_dotenv
 from pathlib import Path
 import traceback
+import subprocess
+
+print("[DEBUG] Searching for opus:")
+print(subprocess.getoutput("find / -name 'libopus.so*' 2>/dev/null"))
 
 try:
     discord.opus.load_opus("/usr/lib/libopus.so.0")
