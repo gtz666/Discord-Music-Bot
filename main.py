@@ -33,6 +33,7 @@ LOOP_NONE = "none"
 LOOP_QUEUE = "queue"
 LOOP_SINGLE = "single"
 
+
 def get_ffmpeg_options():
     return {
         'before_options': '',
@@ -41,6 +42,7 @@ def get_ffmpeg_options():
 
 def get_ffmpeg_path():
     return shutil.which("ffmpeg") or "ffmpeg"
+
 
 def get_ydl_opts():
     return {
@@ -56,6 +58,8 @@ def get_ydl_opts():
         }]
     }
 
+print(f"[DEBUG] FFmpeg path used: {get_ffmpeg_path()}")
+
 async def play_next(ctx):
     guild_id = ctx.guild.id
     vc = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -70,6 +74,10 @@ async def play_next(ctx):
     volume = volume_levels.get(guild_id, 0.5)
 
     try:
+        if not os.path.isfile(path):
+            print(f"[ERROR] File not found: {path}")
+            await ctx.send("❌ Audio file missing. Something went wrong with download.")
+            return
         source = discord.PCMVolumeTransformer(
             discord.FFmpegPCMAudio(path, executable=get_ffmpeg_path(), **get_ffmpeg_options()),
             volume=volume
@@ -88,7 +96,11 @@ async def play_next(ctx):
             except Exception as e:
                 now_playing[guild_id] = None
 
-        vc.play(source, after=after_playing)
+        try:
+            vc.play(source, after=after_playing)
+        except Exception as e:
+            print(f"[ERROR] vc.play(): {e}")
+            await ctx.send(f"❌ Failed to play: {e}")
 
         play_history.setdefault(guild_id, []).append({'title': title})
         if len(play_history[guild_id]) > 5:
