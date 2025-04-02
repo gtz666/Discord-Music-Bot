@@ -38,6 +38,10 @@ def get_ffmpeg_options():
         'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5'
     }
 
+def get_ffmpeg_path():
+    import shutil
+    return shutil.which("ffmpeg") or "ffmpeg"
+
 def play_next(ctx):
     guild_id = ctx.guild.id
     vc = discord.utils.get(bot.voice_clients, guild=ctx.guild)
@@ -51,7 +55,11 @@ def play_next(ctx):
     url, title = item['url'], item['title']
     volume = volume_levels.get(guild_id, 0.5)
     ffmpeg_options = get_ffmpeg_options()
-    source = discord.PCMVolumeTransformer(discord.FFmpegPCMAudio(url, **ffmpeg_options), volume=volume)
+    
+    source = discord.PCMVolumeTransformer(
+        discord.FFmpegPCMAudio(url, executable=get_ffmpeg_path(), **ffmpeg_options),
+        volume=volume
+    )
     current_sources[guild_id] = source
     now_playing[guild_id] = title
 
