@@ -1,11 +1,11 @@
 [build]
 builder = "nixpacks"
 
+[phases.setup]
+nixPkgs = ["python310", "ffmpeg", "libopus"]
+
 [variables]
 BP_LAUNCHPAD_LANGUAGE = "python"
-
-[phases.setup]
-nixPkgs = ["python310", "ffmpeg"]
 
 [start]
 cmd = "python main.py"
